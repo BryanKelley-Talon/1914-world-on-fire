@@ -257,6 +257,9 @@ const CHAPTERS = [
   },
 ];
 
+// Home timeline (the Flashpoint landing page) — exit link at chapter/game end.
+const TIMELINE_URL = "https://flashpointhistory.com";
+
 const SEEDS_VERDICT = [
   { max:8,  label:"The Statesman",           color:"#4E9A5E", msg:"Across seven chapters of crisis, your choices consistently prioritized diplomacy, institutional stability, and the long view over short-term aggression. History records you as a voice of reason in an era that had very few." },
   { max:20, label:"The Reluctant Hawk",       color:"#C9A54C", msg:"Your choices reflected the genuine tensions of the era — moments of restraint alongside moments of escalation. You were neither the cause of catastrophe nor its cure. Most historical actors fall into this category." },
@@ -776,7 +779,10 @@ function ChapterEndScreen({ chapter, meters, hingeCorrect, seeds, chIdx, onRetur
             </div>
           </div>
         )}
-        <button className="btn" style={{marginTop:8}} onClick={onReturnToHub}>Return to Chapter Select</button>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:8}}>
+          <button className="btn" onClick={onReturnToHub}>Return to Chapter Select</button>
+          <a className="btn btn-ghost" href={TIMELINE_URL}>↩ Flashpoint Timeline</a>
+        </div>
       </div>
     </div>
   );
