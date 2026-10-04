@@ -584,7 +584,7 @@ function ChapterHub({ completedChapters, seeds, onSelectChapter, onResetSave }) 
       <div className="hub-header">
         <div className="hub-pretitle">1914 &middot; A World on Fire</div>
         <div className="hub-title">Chapter Select</div>
-        <div className="hub-player">{completedChapters.length} of {CHAPTERS.length} chapters complete</div>
+        {/* The "N of 7 chapters complete" count is gone too (BK 09:07 "All approved", after Will listed it): nothing reads as a score. */}
       </div>
       <div className="hub-grid">
         {ALL_CHAPTER_META.map((ch,idx)=>{
