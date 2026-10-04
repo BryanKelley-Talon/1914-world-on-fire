@@ -1,7 +1,11 @@
 import { useState } from "react";
 
 const SAVE_KEY = "wof_save_v1";
-const loadSave = () => { try { const d = localStorage.getItem(SAVE_KEY); return d ? JSON.parse(d) : null; } catch { return null; } };
+// No student data (BK 2026-10-04 09:02, canon): the game no longer asks for a name or a class period, and a
+// save written by the old version has both removed the moment the game loads.
+const loadSave = () => { try { const d = localStorage.getItem(SAVE_KEY); if (!d) return null; const v = JSON.parse(d);
+  if (v && ("name" in v || "period" in v)) { delete v.name; delete v.period; localStorage.setItem(SAVE_KEY, JSON.stringify(v)); }
+  return v; } catch { return null; } };
 const writeSave = (data) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch {} };
 const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catch {} };
 
@@ -501,7 +505,7 @@ function MainPanel({ meters }) {
   );
 }
 
-function TitleScreen({ name, setName, period, setPeriod, onStart, hasSave, savedName }) {
+function TitleScreen({ onStart, hasSave }) {
   return (
     <div className="title-screen screen">
       <div className="title-content">
@@ -510,20 +514,14 @@ function TitleScreen({ name, setName, period, setPeriod, onStart, hasSave, saved
         <div className="t-div" />
         {hasSave ? (
           <div style={{textAlign:"center",marginBottom:32}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:15,color:"rgba(240,232,216,.55)",letterSpacing:".12em",marginBottom:20}}>Welcome back, {savedName}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:15,color:"rgba(240,232,216,.55)",letterSpacing:".12em",marginBottom:20}}>Welcome back</div>
             <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
               <button className="btn" onClick={()=>onStart("hub")}>Continue Your Journey</button>
               <button className="btn btn-ghost" onClick={()=>onStart("new")}>New Student</button>
             </div>
           </div>
         ) : (
-          <>
-            <div style={{display:"flex",gap:16,marginBottom:32,flexWrap:"wrap",justifyContent:"center"}}>
-              <input className="wof-input" placeholder="Your Name" value={name} onChange={e=>setName(e.target.value)} />
-              <input className="wof-input" placeholder="Class Period" value={period} onChange={e=>setPeriod(e.target.value)} />
-            </div>
-            <button className="btn" disabled={!name.trim()||!period.trim()} onClick={()=>onStart("howtoplay")}>Begin the Story</button>
-          </>
+          <button className="btn" onClick={()=>onStart("howtoplay")}>Begin the Story</button>
         )}
         <div style={{marginTop:28,fontSize:14,color:"rgba(240,232,216,.32)",letterSpacing:".07em"}}>Global History and Geography 10R &middot; Unit 10.5: The First World War</div>
         <div style={{marginTop:10,fontSize:13,color:"rgba(201,165,76,.5)",letterSpacing:".06em"}}>NYSED Standards 10.5a - 10.5d &middot; Seven Chapters</div>
@@ -575,7 +573,7 @@ function HowToPlayScreen({ onContinue }) {
   );
 }
 
-function ChapterHub({ name, period, completedChapters, seeds, onSelectChapter, onResetSave }) {
+function ChapterHub({ completedChapters, seeds, onSelectChapter, onResetSave }) {
   const getStatus = (idx) => {
     if (completedChapters.includes(idx)) return "completed";
     if (idx === 0 || completedChapters.includes(idx-1)) return "available";
@@ -586,7 +584,7 @@ function ChapterHub({ name, period, completedChapters, seeds, onSelectChapter, o
       <div className="hub-header">
         <div className="hub-pretitle">1914 &middot; A World on Fire</div>
         <div className="hub-title">Chapter Select</div>
-        <div className="hub-player">{name} &nbsp;&middot;&nbsp; Period {period} &nbsp;&middot;&nbsp; {completedChapters.length} of {CHAPTERS.length} chapters complete</div>
+        <div className="hub-player">{completedChapters.length} of {CHAPTERS.length} chapters complete</div>
       </div>
       <div className="hub-grid">
         {ALL_CHAPTER_META.map((ch,idx)=>{
@@ -793,8 +791,6 @@ function ChapterEndScreen({ chapter, meters, hingeCorrect, seeds, chIdx, onRetur
 export default function App() {
   const saved = loadSave();
   const [screen, setScreen] = useState("title");
-  const [name, setName] = useState(saved?.name||"");
-  const [period, setPeriod] = useState(saved?.period||"");
   const [completedChapters, setCompletedChapters] = useState(saved?.completed||[]);
   const [chIdx, setChIdx] = useState(0);
   const [decIdx, setDecIdx] = useState(0);
@@ -810,7 +806,7 @@ export default function App() {
   const chapter = CHAPTERS[chIdx]||CHAPTERS[0];
   const decision = chapter.decisions[decIdx]||chapter.decisions[0];
   const go = (s)=>{ setAnimKey(k=>k+1); setScreen(s); window.scrollTo(0,0); };
-  const saveProgress = (c,s)=>writeSave({name,period,completed:c,seeds:s});
+  const saveProgress = (c,s)=>writeSave({completed:c,seeds:s});
 
   const applyMeters = (delta)=>{
     setMeters(prev=>{
@@ -826,7 +822,7 @@ export default function App() {
 
   const handleTitleStart=(mode)=>{
     if(mode==="hub"){go("hub");return;}
-    if(mode==="new"){clearSave();setName("");setPeriod("");setCompletedChapters([]);setSeeds(0);setScreen("title");setAnimKey(k=>k+1);return;}
+    if(mode==="new"){clearSave();setCompletedChapters([]);setSeeds(0);setScreen("title");setAnimKey(k=>k+1);return;}
     go("howtoplay");
   };
 
@@ -864,7 +860,7 @@ export default function App() {
 
   const handleResetSave=()=>{
     if(window.confirm("Reset all progress? This cannot be undone.")){
-      clearSave();setCompletedChapters([]);setSeeds(0);setName("");setPeriod("");go("title");
+      clearSave();setCompletedChapters([]);setSeeds(0);go("title");
     }
   };
 
@@ -876,9 +872,9 @@ export default function App() {
       <div className="wof">
         {showPanel&&<MainPanel meters={meters}/>}
         <div key={animKey}>
-          {screen==="title"          &&<TitleScreen name={name} setName={setName} period={period} setPeriod={setPeriod} onStart={handleTitleStart} hasSave={!!saved} savedName={saved?.name}/>}
-          {screen==="howtoplay"      &&<HowToPlayScreen onContinue={()=>{writeSave({name,period,completed:[],seeds:0});go("hub");}}/>}
-          {screen==="hub"            &&<ChapterHub name={name} period={period} completedChapters={completedChapters} seeds={seeds} onSelectChapter={handleSelectChapter} onResetSave={handleResetSave}/>}
+          {screen==="title"          &&<TitleScreen onStart={handleTitleStart} hasSave={!!saved}/>}
+          {screen==="howtoplay"      &&<HowToPlayScreen onContinue={()=>{writeSave({completed:[],seeds:0});go("hub");}}/>}
+          {screen==="hub"            &&<ChapterHub completedChapters={completedChapters} seeds={seeds} onSelectChapter={handleSelectChapter} onResetSave={handleResetSave}/>}
           {screen==="chapterIntro"   &&<ChapterIntroScreen chapter={chapter} onContinue={()=>go("chapterContext")}/>}
           {screen==="chapterContext" &&<ContextScreen chapter={chapter} onContinue={()=>{setDecIdx(0);setSelChoice(null);go("decision");}}/>}
           {screen==="decision"       &&<DecisionScreen chapter={chapter} decision={decision} decisionIdx={decIdx} selectedChoice={selChoice} onSelect={setSelChoice} onConfirm={handleConfirm}/>}
